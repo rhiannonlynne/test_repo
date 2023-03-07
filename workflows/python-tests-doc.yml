@@ -1,0 +1,50 @@
+name: Run Tests
+
+on:
+  # Trigger the workflow on push (to main) or pull request
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  Tests:
+    name: Run Tests (${{ matrix.python-version }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest", "macos-latest"]
+        python-version: ["3.10", "3.11"]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge,defaults
+          channel-priority: strict
+          show-channel-urls: true
+      - name: configure conda and install requirements
+        shell: bash -l {0}
+        run: |
+          conda config --set always_yes yes
+          conda install --quiet --file=requirements.txt
+          conda install --quiet --file=test-requirements.txt
+      - name: install tests
+        shell: bash -l {0}
+        run: |
+          echo `pwd`
+          ls ${{ github.workspace }}
+          #python -m pip install .
+      - name: conda list
+        shell: bash -l {0}
+        run: conda list
+      - name: run tests
+        shell: bash -l {0}
+        run: |
+          python test.py
